@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: eco-mitra
+    runtime: python
+    rootDir: ecomitra
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --chdir backend analyze_product:app
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.11
+      - key: GEMINI_API_KEY
+        sync: false

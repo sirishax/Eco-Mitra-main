@@ -1,141 +1,212 @@
-from transformers import pipeline
-from langchain_groq import ChatGroq
-from langchain_core.prompts import PromptTemplate
+import json
+import logging
+import mimetypes
+import os
+import re
+from datetime import datetime, timedelta
+from pathlib import Path
+
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-import logging
-import os
+from google import genai
+from google.genai import types
 from werkzeug.utils import secure_filename
-from datetime import datetime, timedelta
-import json
 
-# Configure logging
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__)
-# Configure CORS to allow requests from any origin
-CORS(app, resources={r"/*": {"origins": "*"}})
+BASE_DIR = Path(__file__).resolve().parent
+PROJECT_DIR = BASE_DIR.parent
+FRONTEND_DIR = PROJECT_DIR / "frontend"
+UPLOAD_FOLDER = BASE_DIR / "uploads"
+TRACKING_FILE = BASE_DIR / "product_tracking.json"
+DEFAULT_IMAGE_PATH = UPLOAD_FOLDER / "photorealistic-water-bottle_23-2151049030.avif"
 
-UPLOAD_FOLDER = 'uploads'
-TRACKING_FILE = 'product_tracking.json'
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app = Flask(__name__, static_folder=str(FRONTEND_DIR), static_url_path="")
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-# Initialize tracking data
+UPLOAD_FOLDER.mkdir(exist_ok=True)
+
+_gemini_client = None
+
+
+def load_local_env():
+    for env_path in (PROJECT_DIR / ".env", PROJECT_DIR / ".env.example"):
+        if not env_path.exists():
+            continue
+
+        for line in env_path.read_text(encoding="utf-8").splitlines():
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#") or "=" not in stripped:
+                continue
+
+            key, value = stripped.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            if key and key not in os.environ:
+                os.environ[key] = value
+
+
+load_local_env()
+
+
 def load_tracking_data():
-    if os.path.exists(TRACKING_FILE):
-        with open(TRACKING_FILE, 'r') as f:
-            return json.load(f)
+    if TRACKING_FILE.exists():
+        with TRACKING_FILE.open("r", encoding="utf-8") as file:
+            return json.load(file)
     return {"products": []}
 
+
 def save_tracking_data(data):
-    with open(TRACKING_FILE, 'w') as f:
-        json.dump(data, f, indent=2)
+    with TRACKING_FILE.open("w", encoding="utf-8") as file:
+        json.dump(data, file, indent=2)
+
 
 def cleanup_old_data():
     data = load_tracking_data()
     one_week_ago = datetime.now() - timedelta(days=7)
     data["products"] = [
-        product for product in data["products"]
+        product
+        for product in data["products"]
         if datetime.fromisoformat(product["timestamp"]) > one_week_ago
     ]
     save_tracking_data(data)
 
-llm = ChatGroq(
-    model="llama-3.3-70b-versatile",            #llama is built by meta ("llm model ")
-    groq_api_key="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",     #groq cloud it uses LPU
-    temperature=0.0,
-    max_retries=2,
-    # other params...
-)
 
-# Initialize the captioner once
-captioner = pipeline("image-to-text", model="Salesforce/blip-image-captioning-base")   #product details by this model 
+def get_gemini_client():
+    global _gemini_client
+    if _gemini_client is None:
+        api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GROQ_API_KEY")
+        if not api_key:
+            raise RuntimeError(
+                "GEMINI_API_KEY is not set. Add it to your environment before calling /api/analyze."
+            )
 
-prompt_extract = PromptTemplate.from_template("""
-### Given the following product description, analyze the materials and estimated carbon footprint. Return a JSON object with:
-- product: the product name or a short description
-- material: the main material(s) used in the product
-- a rating from 1 to 5 (where 1 is high carbon footprint and unsustainable, and 5 is low carbon footprint and highly sustainable),
-- a brief justification,
-- and 2 to 3 sustainable alternative product suggestions (if applicable), each with a short reason why they are better.
+        _gemini_client = genai.Client(api_key=api_key)
+    return _gemini_client
 
-Respond in this format only:
-{{
-  "product": "<product name or description>",
+
+def parse_analysis_response(content):
+    cleaned_content = content.strip()
+    cleaned_content = re.sub(r"^```(?:json)?\s*", "", cleaned_content)
+    cleaned_content = re.sub(r"\s*```$", "", cleaned_content)
+    return json.loads(cleaned_content)
+
+
+def get_image_path_from_request():
+    if request.method == "POST" and "image" in request.files:
+        image = request.files["image"]
+        if image and image.filename:
+            filename = secure_filename(image.filename)
+            image_path = UPLOAD_FOLDER / filename
+            image.save(image_path)
+            logger.info("Saved uploaded image to %s", image_path)
+            return image_path, True
+        raise FileNotFoundError("Please upload an image before running analysis.")
+
+    if request.method == "GET" and DEFAULT_IMAGE_PATH.exists():
+        return DEFAULT_IMAGE_PATH, False
+
+    raise FileNotFoundError(
+        "No image was uploaded and the default sample image was not found."
+    )
+
+
+def analyze_with_gemini(image_path):
+    client = get_gemini_client()
+    mime_type = mimetypes.guess_type(str(image_path))[0] or "application/octet-stream"
+    image_bytes = Path(image_path).read_bytes()
+
+    prompt = """
+Analyze this product image and return only valid JSON in this exact format:
+{
+  "product": "<product name or short description>",
   "material": "<main material(s)>",
   "rating": <number from 1 to 5>,
   "justification": "<short explanation>",
   "alternatives": [
-    {{
+    {
       "name": "<alternative product name>",
       "reason": "<why it is more sustainable>"
-    }}
+    }
   ]
-}}
+}
 
-Product description:
-{product_description}
-""")
+Rules:
+- Rating 1 means high carbon footprint and unsustainable.
+- Rating 5 means low carbon footprint and highly sustainable.
+- Suggest 2 to 3 realistic sustainable alternatives when applicable.
+- Return JSON only, with no markdown or extra commentary.
+""".strip()
 
-chain_extract = prompt_extract | llm    #pipeline operator 
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=[
+            prompt,
+            types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
+        ],
+        config=types.GenerateContentConfig(
+            temperature=0,
+            response_mime_type="application/json",
+        ),
+    )
 
-@app.route('/analyze', methods=['GET', 'POST'])
+    if not response.text:
+        raise RuntimeError("Gemini returned an empty response.")
+
+    return parse_analysis_response(response.text)
+
+
+@app.get("/")
+def serve_index():
+    return app.send_static_file("index.html")
+
+
+@app.get("/health")
+def healthcheck():
+    return jsonify({"status": "ok"})
+
+
+@app.route("/analyze", methods=["GET", "POST"])
+@app.route("/api/analyze", methods=["GET", "POST"])
 def analyze_product():
+    uploaded_image = False
+    image_path = None
+
     try:
         logger.info("Received request for product analysis")
-        if request.method == 'POST' and 'image' in request.files:
-            image = request.files['image']
-            filename = secure_filename(image.filename)
-            image_path = os.path.join(UPLOAD_FOLDER, filename)
-            image.save(image_path)
-            logger.info(f"Saved uploaded image to {image_path}")
-        else:
-            # Fallback to a default image if no upload
-            image_path = r"C:\Users\lenovo\Downloads\TRI_CODE\TRI_CODE\uploads\photorealistic-water-bottle_23-2151049030.avif"
-        # Analyze the image
-        logger.info("Analyzing image...")
-        page_content = captioner(image_path)[0]['generated_text']       #it gives you product details which is generatedd by salesforce model 
-        logger.info(f"Image analysis result: {page_content}")
-        
-        # Get the analysis
-        logger.info("Getting product analysis...")
-        res = chain_extract.invoke({"product_description": page_content})
-        analysis_data = eval(res.content)
-        logger.info(f"Analysis result: {analysis_data}")
-        
-        # Add timestamp to the analysis data
-        analysis_data['timestamp'] = datetime.now().isoformat()
+        image_path, uploaded_image = get_image_path_from_request()
+        analysis_data = analyze_with_gemini(image_path)
+        logger.info("Analysis result: %s", analysis_data)
 
-        # Save to tracking data
+        analysis_data["timestamp"] = datetime.now().isoformat()
+
         tracking_data = load_tracking_data()
         tracking_data["products"].append(analysis_data)
         save_tracking_data(tracking_data)
-        
-        # Cleanup old data
         cleanup_old_data()
-        
-        # Optionally, remove the uploaded image after processing
-        if request.method == 'POST' and 'image' in request.files:
-            os.remove(image_path)
-        return jsonify(analysis_data)
-    except Exception as e:
-        logger.error(f"Error in analyze_product: {str(e)}")
-        return jsonify({"error": str(e)}), 500
 
-@app.route('/tracking', methods=['GET'])
+        return jsonify(analysis_data)
+    except Exception as error:
+        logger.error("Error in analyze_product: %s", error)
+        return jsonify({"error": str(error)}), 500
+    finally:
+        if uploaded_image and image_path and image_path.exists():
+            image_path.unlink(missing_ok=True)
+
+
+@app.route("/tracking", methods=["GET"])
+@app.route("/api/tracking", methods=["GET"])
 def get_tracking_data():
     try:
-        # Cleanup old data before returning
         cleanup_old_data()
         return jsonify(load_tracking_data())
-    except Exception as e:
-        logger.error(f"Error in get_tracking_data: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+    except Exception as error:
+        logger.error("Error in get_tracking_data: %s", error)
+        return jsonify({"error": str(error)}), 500
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     logger.info("Starting Flask server...")
-    app.run(port=5000, debug=True)  # Added debug=True for better error messages png
-
-
-
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", "5000")), debug=True)

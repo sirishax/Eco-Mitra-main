@@ -1,3 +1,11 @@
+const API_BASE_URL =
+    window.__API_BASE_URL__ ||
+    (window.location.port === '8000' ? 'http://localhost:5000' : '');
+
+function buildApiUrl(path) {
+    return `${API_BASE_URL}${path}`;
+}
+
 // --- SPA Navigation Helpers ---
 function showSection(sectionId) {
     document.getElementById('welcome-section').style.display = 'none';
@@ -203,12 +211,14 @@ if (uploadForm) {
         // Hide report section while analyzing
         document.getElementById('report-section').style.display = 'none';
         try {
-            const response = await fetch('http://localhost:5000/analyze', {
+            const response = await fetch(buildApiUrl('/api/analyze'), {
                 method: 'POST',
                 body: formData
             });
-            if (!response.ok) throw new Error('Network response was not ok');
             const productAnalysis = await response.json();
+            if (!response.ok) {
+                throw new Error(productAnalysis.error || 'Network response was not ok');
+            }
             updateProductAndMaterial(productAnalysis.product, productAnalysis.material);
             updateRating(productAnalysis.rating);
             updateJustification(productAnalysis.justification);
@@ -216,7 +226,9 @@ if (uploadForm) {
             showSection('report-section');
         } catch (error) {
             console.error('Error uploading or analyzing image:', error);
-            updateJustification('Error analyzing image. Please try again.');
+            updateProductAndMaterial('-', '-');
+            updateAlternatives([]);
+            updateJustification(error.message || 'Error analyzing image. Please try again.');
             showSection('report-section');
         } finally {
             hideSpinner();
@@ -226,57 +238,33 @@ if (uploadForm) {
     });
 }
 
-// Initial fetch for default analysis (optional, can be removed if only upload is allowed)
-async function fetchAndUpdateAnalysis() {
-    try {
-        console.log('Fetching analysis data...');
-        showSpinner();
-        const response = await fetch('http://localhost:5000/analyze');
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        const productAnalysis = await response.json();
-        console.log('Received data:', productAnalysis);
-        
-        // Update UI with the fetched data
-        updateRating(productAnalysis.rating);
-        updateJustification(productAnalysis.justification);
-        updateAlternatives(productAnalysis.alternatives);
-    } catch (error) {
-        console.error('Error fetching product analysis:', error);
-        // You might want to show an error message to the user here
-        document.querySelector('#report-section .justification-text').textContent = 'Error loading product analysis. Please try again later.';
-    } finally {
-        hideSpinner();
-    }
-}
-
-// Call fetchAndUpdateAnalysis when the DOM is loaded
-document.addEventListener('DOMContentLoaded', fetchAndUpdateAnalysis);
-
 // Mobile menu functionality
 const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
 const navLinks = document.querySelector('.nav-links');
 
-mobileMenuBtn.addEventListener('click', () => {
-    navLinks.classList.toggle('active');
-    const icon = mobileMenuBtn.querySelector('i');
-    if (navLinks.classList.contains('active')) {
-        icon.classList.remove('fa-bars');
-        icon.classList.add('fa-times');
-    } else {
-        icon.classList.remove('fa-times');
-        icon.classList.add('fa-bars');
-    }
-});
+if (mobileMenuBtn && navLinks) {
+    mobileMenuBtn.addEventListener('click', () => {
+        navLinks.classList.toggle('active');
+        const icon = mobileMenuBtn.querySelector('i');
+        if (navLinks.classList.contains('active')) {
+            icon.classList.remove('fa-bars');
+            icon.classList.add('fa-times');
+        } else {
+            icon.classList.remove('fa-times');
+            icon.classList.add('fa-bars');
+        }
+    });
+}
 
 // Close mobile menu when clicking outside
 document.addEventListener('click', (e) => {
-    if (!e.target.closest('.nav-container') && navLinks.classList.contains('active')) {
+    if (navLinks && !e.target.closest('.nav-container') && navLinks.classList.contains('active')) {
         navLinks.classList.remove('active');
-        const icon = mobileMenuBtn.querySelector('i');
-        icon.classList.remove('fa-times');
-        icon.classList.add('fa-bars');
+        if (mobileMenuBtn) {
+            const icon = mobileMenuBtn.querySelector('i');
+            icon.classList.remove('fa-times');
+            icon.classList.add('fa-bars');
+        }
     }
 });
 

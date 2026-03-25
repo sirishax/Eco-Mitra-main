@@ -463,6 +463,14 @@
     </div>
 
     <script>
+        const API_BASE_URL =
+            window.__API_BASE_URL__ ||
+            (window.location.port === '8000' ? 'http://localhost:5000' : '');
+
+        function buildApiUrl(path) {
+            return `${API_BASE_URL}${path}`;
+        }
+
         // Function to format date
         function formatDate(dateString) {
             const date = new Date(dateString);
@@ -487,7 +495,9 @@
         // Function to update stats
         function updateStats(products) {
             const totalProducts = products.length;
-            const avgRating = products.reduce((acc, curr) => acc + curr.rating, 0) / totalProducts;
+            const avgRating = totalProducts
+                ? products.reduce((acc, curr) => acc + curr.rating, 0) / totalProducts
+                : 0;
             const sustainableCount = products.filter(p => p.rating >= 4).length;
 
             document.getElementById('total-products').textContent = totalProducts;
@@ -515,8 +525,11 @@
         // Fetch and display tracking data
         async function loadTrackingData() {
             try {
-                const response = await fetch('http://localhost:5000/tracking');
+                const response = await fetch(buildApiUrl('/api/tracking'));
                 const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to load tracking data');
+                }
                 
                 const trackingGrid = document.getElementById('tracking-grid');
                 trackingGrid.innerHTML = data.products.map(createTrackingCard).join('');
@@ -524,6 +537,8 @@
                 updateStats(data.products);
             } catch (error) {
                 console.error('Error loading tracking data:', error);
+                document.getElementById('tracking-grid').innerHTML =
+                    '<p>Unable to load product tracking right now.</p>';
             }
         }
 

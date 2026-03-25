@@ -1,0 +1,8 @@
+ecomitra/.venv/
+ecomitra/.env
+ecomitra/.logs/
+ecomitra/.tmp/
+**/__pycache__/
+*.pyc
+ecomitra/backend/uploads/*
+!ecomitra/backend/uploads/photorealistic-water-bottle_23-2151049030.avif

@@ -1,6 +1,4 @@
-transformers
-langchain_groq
-langchain-core
-torch
 flask
-flask-cors 
+flask-cors
+google-genai
+gunicorn

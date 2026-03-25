@@ -1,8 +1,89 @@
 # Eco-Mitra
-sustainability shopping assistence
 
-To run this application, have give two commands in powershell, those are 
-    
-    1. frontend --> python -m http.server 8000
-    2. backend --> python backend/analyze_product.py
+Eco-Mitra is a sustainability shopping assistant with:
+
+- a Flask backend that analyzes product images
+- a static HTML/CSS/JS frontend
+- local product tracking stored in JSON
+
+## Project layout
+
+- `ecomitra/backend/analyze_product.py`: Flask API and local static hosting
+- `ecomitra/frontend/`: frontend pages and assets
+- `ecomitra/requirements.txt`: Python dependencies
+- `render.yaml`: Render deployment blueprint
+
+## Before you run it
+
+Set your Gemini API key in PowerShell:
+
+```powershell
+$env:GEMINI_API_KEY="your_gemini_api_key"
+```
+
+Important: if an old Groq key was committed in the repo history, revoke it.
+
+## Run locally
+
+### Option 1: easiest local run
+
+Run only the Flask app. It serves both the backend and frontend:
+
+```powershell
+cd ecomitra
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python backend/analyze_product.py
+```
+
+Open:
+
+```text
+http://localhost:5000
+```
+
+### Option 2: run frontend and backend separately
+
+Backend:
+
+```powershell
+cd ecomitra
+.venv\Scripts\Activate.ps1
+python backend/analyze_product.py
+```
+
+Frontend:
+
+```powershell
+cd ecomitra/frontend
+python -m http.server 8000
+```
+
+Open:
+
+```text
+http://localhost:8000
+```
+
+The frontend now automatically talks to `http://localhost:5000` when it detects the local static server.
+
+## Deployment
+
+This repo is set up for Render using the included `render.yaml`.
+
+### What you need in Render
+
+- a web service from this GitHub repo
+- environment variable: `GEMINI_API_KEY`
+
+### Render notes
+
+- Root directory: `ecomitra`
+- Build command: `pip install -r requirements.txt`
+- Start command: `gunicorn --chdir backend analyze_product:app`
+
+### Important limitation
+
+`product_tracking.json` is file-based storage. On cloud deployments, that data is not guaranteed to persist across restarts unless you attach persistent storage or move tracking data to a database.
 
