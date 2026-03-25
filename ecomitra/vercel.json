@@ -1,0 +1,38 @@
+{
+  "functions": {
+    "api/index.py": {
+      "runtime": "python3.11",
+      "maxDuration": 60
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/$",
+      "dest": "/frontend/home.html"
+    },
+    {
+      "src": "/(home|index|login|register|about|tracking|sustainability-game)\\.html",
+      "dest": "/frontend/$1.html"
+    },
+    {
+      "src": "/drag&drop\\.html",
+      "dest": "/frontend/drag&drop.html"
+    },
+    {
+      "src": "/(auth|script)\\.js",
+      "dest": "/frontend/$1.js"
+    },
+    {
+      "src": "/styles\\.css",
+      "dest": "/frontend/styles.css"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/frontend/$1"
+    }
+  ]
+}

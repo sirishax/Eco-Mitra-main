@@ -1,0 +1,39 @@
+{
+  "version": 2,
+  "functions": {
+    "ecomitra/api/index.py": {
+      "runtime": "python3.11",
+      "maxDuration": 60
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "ecomitra/api/index.py"
+    },
+    {
+      "src": "/$",
+      "dest": "/ecomitra/frontend/home.html"
+    },
+    {
+      "src": "/(home|index|login|register|about|tracking|sustainability-game)\\.html",
+      "dest": "/ecomitra/frontend/$1.html"
+    },
+    {
+      "src": "/drag&drop\\.html",
+      "dest": "/ecomitra/frontend/drag&drop.html"
+    },
+    {
+      "src": "/(auth|script)\\.js",
+      "dest": "/ecomitra/frontend/$1.js"
+    },
+    {
+      "src": "/styles\\.css",
+      "dest": "/ecomitra/frontend/styles.css"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/ecomitra/frontend/$1"
+    }
+  ]
+}

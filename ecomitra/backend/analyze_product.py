@@ -3,6 +3,7 @@ import logging
 import mimetypes
 import os
 import re
+import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -19,9 +20,11 @@ logger = logging.getLogger(__name__)
 BASE_DIR = Path(__file__).resolve().parent
 PROJECT_DIR = BASE_DIR.parent
 FRONTEND_DIR = PROJECT_DIR / "frontend"
-UPLOAD_FOLDER = BASE_DIR / "uploads"
-TRACKING_FILE = BASE_DIR / "product_tracking.json"
-DEFAULT_IMAGE_PATH = UPLOAD_FOLDER / "photorealistic-water-bottle_23-2151049030.avif"
+RUNTIME_TMP_DIR = Path(tempfile.gettempdir()) / "eco-mitra"
+IS_SERVERLESS = bool(os.getenv("VERCEL")) or "FUNCTION_TARGET" in os.environ
+UPLOAD_FOLDER = (RUNTIME_TMP_DIR / "uploads") if IS_SERVERLESS else (BASE_DIR / "uploads")
+TRACKING_FILE = (RUNTIME_TMP_DIR / "product_tracking.json") if IS_SERVERLESS else (BASE_DIR / "product_tracking.json")
+DEFAULT_IMAGE_PATH = BASE_DIR / "uploads" / "photorealistic-water-bottle_23-2151049030.avif"
 
 app = Flask(__name__, static_folder=str(FRONTEND_DIR), static_url_path="")
 CORS(app, resources={r"/api/*": {"origins": "*"}})

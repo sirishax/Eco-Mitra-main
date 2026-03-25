@@ -70,7 +70,37 @@ The frontend now automatically talks to `http://localhost:5000` when it detects 
 
 ## Deployment
 
-This repo is set up for Render using the included `render.yaml`.
+### Vercel (recommended)
+
+This repo can be deployed directly to Vercel.
+
+1. Import `sirishax/Eco-Mitra` in Vercel.
+2. Keep the project root as repository root (`Eco-Mitra/`).
+3. Add environment variable `GEMINI_API_KEY` in Vercel Project Settings.
+4. Deploy.
+
+The deployment uses:
+
+- root `vercel.json` for routes and function mapping
+- `ecomitra/api/index.py` as the Python serverless entrypoint
+- static frontend files from `ecomitra/frontend/`
+
+#### Optional CLI deploy
+
+```powershell
+vercel login
+vercel --prod
+```
+
+After deploy, validate:
+
+- `/health`
+- `/api/analyze`
+- `/api/tracking`
+
+### Render (legacy)
+
+If you still want Render, this repo also includes `render.yaml`.
 
 ### What you need in Render
 
@@ -86,4 +116,9 @@ This repo is set up for Render using the included `render.yaml`.
 ### Important limitation
 
 `product_tracking.json` is file-based storage. On cloud deployments, that data is not guaranteed to persist across restarts unless you attach persistent storage or move tracking data to a database.
+
+### Security note
+
+- Do not commit real keys in `.env`.
+- Keep secrets only in Vercel environment variables for production.
 

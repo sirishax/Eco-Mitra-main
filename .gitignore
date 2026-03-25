@@ -2,6 +2,8 @@ ecomitra/.venv/
 ecomitra/.env
 ecomitra/.logs/
 ecomitra/.tmp/
+ecomitra/.vercel-deploy-temp/
+ecomitra/.vercel/
 **/__pycache__/
 *.pyc
 ecomitra/backend/uploads/*
