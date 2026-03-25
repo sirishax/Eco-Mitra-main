@@ -84,7 +84,7 @@ If Vercel was previously configured with a different root directory, update it a
 The deployment uses:
 
 - root `vercel.json` for routes and function mapping
-- `ecomitra/api/index.py` as the Python serverless entrypoint
+- `api/index.py` as the Python serverless entrypoint
 - static frontend files from `ecomitra/frontend/`
 
 #### Optional CLI deploy
