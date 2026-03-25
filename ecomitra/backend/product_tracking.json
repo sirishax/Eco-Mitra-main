@@ -20,6 +20,23 @@
         }
       ],
       "timestamp": "2026-03-25T11:58:04.185401"
+    },
+    {
+      "product": "Plastic bucket with lid",
+      "material": "Plastic (likely polypropylene or polyethylene)",
+      "rating": 2,
+      "justification": "Made from virgin plastic, which is derived from fossil fuels and has an energy-intensive production process. While reusable, its end-of-life recycling is often limited, and it contributes to plastic waste and potential microplastic pollution.",
+      "alternatives": [
+        {
+          "name": "Metal bucket (e.g., galvanized steel or stainless steel)",
+          "reason": "More durable, longer lifespan, and highly recyclable at end-of-life without degradation of material quality."
+        },
+        {
+          "name": "Bucket made from 100% post-consumer recycled plastic",
+          "reason": "Reduces demand for virgin plastic and utilizes existing plastic waste, lowering the overall environmental impact."
+        }
+      ],
+      "timestamp": "2026-03-25T12:55:54.616045"
     }
   ]
 }

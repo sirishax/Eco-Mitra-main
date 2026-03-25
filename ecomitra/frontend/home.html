@@ -361,7 +361,7 @@
         }
     </style>
 </head>
-<body>
+<body data-auth-mode="public" hidden>
     <div class="main-bg-gradient"></div>
     <div class="header">
         <div class="logo-area">
@@ -369,10 +369,10 @@
             <span>Eco Mitra</span>
         </div>
         <h1>Welcome to EcoMitra</h1>
-        <p class="section-subtitle">Your AI-powered companion for sustainable living</p>
+        <p class="section-subtitle" id="home-auth-copy">Your AI-powered companion for sustainable living</p>
     </div>
     <div class="button-container">
-        <button class="get-started" onclick="window.location.href='login.html'">
+        <button class="get-started" id="get-started-btn">
             <i class="fa-solid fa-arrow-right"></i> Get Started
         </button>
     </div>
@@ -420,6 +420,6 @@
         </div>
     </div>
 
-    
+    <script type="module" src="auth.js"></script>
 </body>
 </html>

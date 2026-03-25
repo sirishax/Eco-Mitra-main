@@ -197,11 +197,8 @@
             display: block;
         }
     </style>
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js" type="module"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js" type="module"></script>
 </head>
-<body>
+<body data-auth-mode="guest" hidden>
     <div class="main-bg-gradient"></div>
 
     <div class="container">
@@ -210,6 +207,7 @@
             <p class="auth-subtitle">Sign in to continue your sustainability journey</p>
             
             <div id="error-message" class="error-message"></div>
+            <div id="success-message" class="error-message" style="color:#d9ffe6;background:rgba(34,197,94,0.16);"></div>
             
             <form id="login-form" class="auth-form">
                 <div class="form-group">
@@ -252,78 +250,6 @@
             </div>
         </div>
     </div>
-    <script type="module">
-        // Import the functions you need from the SDKs you need
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-    
-        // Your web app's Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyB0zO2a5eNznBdHwaT0CvwN099iiUDWUjw",
-            authDomain: "eco-mitra-1a024.firebaseapp.com", 
-            projectId: "eco-mitra-1a024",
-            storageBucket: "eco-mitra-1a024.appspot.com",
-            messagingSenderId: "663227949846",
-            appId: "1:663227949846:web:4256eb41337f7536c62637",
-            measurementId: "G-HTFZ2KK5ZV"
-        };
-    
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-    
-        // Handle regular email/password login
-        document.getElementById('login-form').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const submitBtn = this.querySelector('button[type="submit"]');
-            const originalBtnText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
-            submitBtn.disabled = true;
-    
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const errorMessage = document.getElementById('error-message');
-    
-            try {
-                const userCredential = await signInWithEmailAndPassword(auth, email, password);
-                const user = userCredential.user;
-                localStorage.setItem('user', JSON.stringify({
-                    uid: user.uid,
-                    email: user.email,
-                    displayName: user.displayName
-                }));
-                window.location.href = 'index.html';
-            } catch (error) {
-                submitBtn.innerHTML = originalBtnText;
-                submitBtn.disabled = false;
-                errorMessage.textContent = 'Login failed: ' + error.message;
-                errorMessage.classList.add('show');
-            }
-        });
-    
-        // Handle Google Sign-in
-        document.getElementById('google-signin-btn').onclick = async function() {
-            const provider = new GoogleAuthProvider();
-            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in with Google...';
-            this.disabled = true;
-    
-            try {
-                const result = await signInWithPopup(auth, provider);
-                const user = result.user;
-                localStorage.setItem('user', JSON.stringify({
-                    uid: user.uid,
-                    email: user.email,
-                    displayName: user.displayName,
-                    photoURL: user.photoURL
-                }));
-                window.location.href = 'index.html';
-            } catch (error) {
-                this.innerHTML = '<img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" style="width:20px;vertical-align:middle;"> Sign in with Google';
-                this.disabled = false;
-                alert('Google sign-in failed: ' + error.message);
-            }
-        };
-    </script>
+    <script type="module" src="auth.js"></script>
 </body>
 </html>

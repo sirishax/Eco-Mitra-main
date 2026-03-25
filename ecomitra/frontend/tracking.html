@@ -406,7 +406,7 @@
         }
     </style>
 </head>
-<body>
+<body data-auth-mode="protected" hidden>
     <div class="main-bg-gradient"></div>
     <!-- Navigation Bar -->
     <nav class="navbar">
@@ -542,8 +542,12 @@
             }
         }
 
-        // Load data when page loads
-        document.addEventListener('DOMContentLoaded', loadTrackingData);
+        window.addEventListener('eco-auth-ready', (event) => {
+            if (event.detail.user) {
+                loadTrackingData();
+            }
+        });
     </script>
+    <script type="module" src="auth.js"></script>
 </body>
 </html>

@@ -507,7 +507,7 @@
         }
     </style>
 </head>
-<body>
+<body data-auth-mode="protected" hidden>
     <div class="controls left-controls">
         <button class="control-btn" id="start-btn">Start Game</button>
         <button class="control-btn" id="reset-btn">Reset</button>
@@ -714,5 +714,6 @@
             });
         });
     </script>
+    <script type="module" src="auth.js"></script>
 </body>
 </html>

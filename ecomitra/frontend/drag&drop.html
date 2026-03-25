@@ -240,7 +240,7 @@
         }
     </style>
 </head>
-<body>
+<body data-auth-mode="protected" hidden>
     <div class="main-bg-gradient"></div>
     <div class="game-container">
         <h1>Sustainable Sorting Game</h1>
@@ -403,5 +403,6 @@
         // Start the game on load
         startGame();
     </script>
+    <script type="module" src="auth.js"></script>
 </body>
 </html>

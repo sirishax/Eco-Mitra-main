@@ -6,12 +6,34 @@ function buildApiUrl(path) {
     return `${API_BASE_URL}${path}`;
 }
 
+function getInitialSection() {
+    const hash = window.location.hash.toLowerCase();
+
+    if (hash === '#upload') {
+        return 'upload-section';
+    }
+
+    if (hash === '#report') {
+        return 'report-section';
+    }
+
+    return 'welcome-section';
+}
+
 // --- SPA Navigation Helpers ---
 function showSection(sectionId) {
     document.getElementById('welcome-section').style.display = 'none';
     document.getElementById('upload-section').style.display = 'none';
     document.getElementById('report-section').style.display = 'none';
     document.getElementById(sectionId).style.display = 'block';
+
+    if (sectionId === 'upload-section') {
+        window.location.hash = 'upload';
+    } else if (sectionId === 'report-section') {
+        window.location.hash = 'report';
+    } else {
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
 
     // Animate report page
     if (sectionId === 'report-section') {
@@ -78,8 +100,8 @@ document.addEventListener('DOMContentLoaded', () => {
         backToUploadBtn.onclick = () => showSection('upload-section');
     }
 
-    // Start on welcome page
-    showSection('welcome-section');
+    // Start on the appropriate page
+    showSection(getInitialSection());
 
     // --- Drag and Drop for Upload ---
     const dropArea = document.getElementById('drop-area');
@@ -238,6 +260,15 @@ if (uploadForm) {
     });
 }
 
+window.addEventListener('hashchange', () => {
+    const targetSection = getInitialSection();
+    const visibleSection = document.querySelector('.page-section[style*="display: block"]');
+
+    if (!visibleSection || visibleSection.id !== targetSection) {
+        showSection(targetSection);
+    }
+});
+
 // Mobile menu functionality
 const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
 const navLinks = document.querySelector('.nav-links');
@@ -268,16 +299,3 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// Logout functionality
-document.addEventListener('DOMContentLoaded', () => {
-    const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            // Clear user data from localStorage
-            localStorage.removeItem('user');
-            // Redirect to home page
-            window.location.href = 'home.html';
-        });
-    }
-}); 

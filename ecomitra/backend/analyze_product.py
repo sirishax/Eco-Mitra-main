@@ -160,7 +160,7 @@ Rules:
 
 @app.get("/")
 def serve_index():
-    return app.send_static_file("index.html")
+    return app.send_static_file("home.html")
 
 
 @app.get("/health")

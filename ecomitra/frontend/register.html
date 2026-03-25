@@ -42,15 +42,41 @@
                         radial-gradient(circle at 20% 80%, #2563eb22 0%, transparent 70%);
             pointer-events: none;
         }
+
+        .error-message,
+        .success-message {
+            padding: 0.8rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .error-message {
+            color: #ffb3b3;
+            background: rgba(255, 107, 107, 0.12);
+        }
+
+        .success-message {
+            color: #d9ffe6;
+            background: rgba(34, 197, 94, 0.16);
+        }
+
+        .error-message.show,
+        .success-message.show {
+            display: block;
+        }
     </style>
 </head>
-<body>
+<body data-auth-mode="guest" hidden>
     <div class="main-bg-gradient"></div>
 
     <div class="container">
         <div class="auth-card glass-card">
             <h1>Create Account</h1>
             <p class="auth-subtitle">Join us in making sustainable choices</p>
+
+            <div id="error-message" class="error-message"></div>
+            <div id="success-message" class="success-message"></div>
             
             <form id="register-form" class="auth-form">
                 <div class="form-group">
@@ -97,46 +123,18 @@
                 </button>
             </form>
 
+            <div style="margin: 1.5rem 0; text-align: center;">
+                <button type="button" id="google-signin-btn" class="primary-btn big-btn auth-btn" style="background:#fff;color:#222;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;gap:8px;">
+                    <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" style="width:20px;vertical-align:middle;"> Continue with Google
+                </button>
+            </div>
+
             <div class="auth-footer">
                 <p>Already have an account? <a href="login.html">Sign In</a></p>
             </div>
         </div>
     </div>
 
-    <script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyB0zO2a5eNznBdHwaT0CvwN099iiUDWUjw",
-        authDomain: "eco-mitra-1a024.firebaseapp.com", 
-        projectId: "eco-mitra-1a024",
-        storageBucket: "eco-mitra-1a024.appspot.com",
-        messagingSenderId: "663227949846",
-        appId: "1:663227949846:web:4256eb41337f7536c62637",
-        measurementId: "G-HTFZ2KK5ZV"
-    };
-    firebase.initializeApp(firebaseConfig);
-
-    document.getElementById('register-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        const confirmPassword = document.getElementById('confirm-password').value;
-
-        if (password !== confirmPassword) {
-            alert('Passwords do not match!');
-            return;
-        }
-
-        firebase.auth().createUserWithEmailAndPassword(email, password)
-            .then((userCredential) => {
-                // Redirect to index.html after successful registration
-                window.location.href = 'index.html';
-            })
-            .catch((error) => {
-                alert('Registration failed: ' + error.message);
-            });
-    });
-    </script>
-    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-auth.js"></script>
+    <script type="module" src="auth.js"></script>
 </body>
 </html>
