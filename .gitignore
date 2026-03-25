@@ -1,3 +1,4 @@
+.venv/
 ecomitra/.venv/
 ecomitra/.env
 ecomitra/.logs/

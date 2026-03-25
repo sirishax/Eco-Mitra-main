@@ -1,0 +1,8 @@
+.git/
+.venv/
+**/.venv/
+**/__pycache__/
+*.pyc
+ecomitra/.logs/
+ecomitra/.tmp/
+ecomitra/.vercel-deploy-temp/

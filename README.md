@@ -79,6 +79,8 @@ This repo can be deployed directly to Vercel.
 3. Add environment variable `GEMINI_API_KEY` in Vercel Project Settings.
 4. Deploy.
 
+If Vercel was previously configured with a different root directory, update it and redeploy.
+
 The deployment uses:
 
 - root `vercel.json` for routes and function mapping
@@ -91,6 +93,12 @@ The deployment uses:
 vercel login
 vercel --prod
 ```
+
+If you saw this error before:
+
+`Error: Function Runtimes must have a valid version...`
+
+it is fixed in this repo by removing explicit runtime strings from Vercel config.
 
 After deploy, validate:
 
