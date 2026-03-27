@@ -75,7 +75,7 @@ The frontend now automatically talks to `http://localhost:5000` when it detects 
 This repo can be deployed directly to Vercel.
 
 1. Import `sirishax/Eco-Mitra` in Vercel.
-2. Keep the project root as repository root (`Eco-Mitra/`).
+2. Keep the project root as repository root (`Eco-Mitra/`). Do not set root directory to `ecomitra/`.
 3. Add environment variable `GEMINI_API_KEY` in Vercel Project Settings.
 4. Deploy.
 
@@ -85,12 +85,15 @@ The deployment uses:
 
 - root `vercel.json` for routes and function mapping
 - `api/index.py` as the Python serverless entrypoint
+- root `requirements.txt` to install backend dependencies
 - static frontend files from `ecomitra/frontend/`
 
 #### Optional CLI deploy
 
 ```powershell
 vercel login
+vercel link
+vercel env add GEMINI_API_KEY production
 vercel --prod
 ```
 

@@ -471,6 +471,19 @@
             return `${API_BASE_URL}${path}`;
         }
 
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>'"]/g, (char) => {
+                const entities = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    "'": '&#39;',
+                    '"': '&quot;'
+                };
+                return entities[char] || char;
+            });
+        }
+
         // Function to format date
         function formatDate(dateString) {
             const date = new Date(dateString);
@@ -507,17 +520,18 @@
 
         // Function to create tracking card
         function createTrackingCard(product) {
+            const rating = Math.max(1, Math.min(5, Number(product.rating) || 1));
             return `
                 <div class="tracking-card">
                     <div class="product-info">
-                        <div class="product-name">${product.product}</div>
-                        <div class="product-material">${product.material}</div>
+                        <div class="product-name">${escapeHtml(product.product)}</div>
+                        <div class="product-material">${escapeHtml(product.material)}</div>
                     </div>
                     <div class="rating">
-                        <div class="stars rating-${product.rating}">${createStars(product.rating)}</div>
-                        <span class="rating-value">${product.rating}/5</span>
+                        <div class="stars rating-${rating}">${createStars(rating)}</div>
+                        <span class="rating-value">${rating}/5</span>
                     </div>
-                    <div class="timestamp">Analyzed on ${formatDate(product.timestamp)}</div>
+                    <div class="timestamp">Analyzed on ${escapeHtml(formatDate(product.timestamp))}</div>
                 </div>
             `;
         }

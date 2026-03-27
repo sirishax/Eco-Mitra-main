@@ -4,6 +4,7 @@ import mimetypes
 import os
 import re
 import tempfile
+import uuid
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -26,10 +27,29 @@ UPLOAD_FOLDER = (RUNTIME_TMP_DIR / "uploads") if IS_SERVERLESS else (BASE_DIR / 
 TRACKING_FILE = (RUNTIME_TMP_DIR / "product_tracking.json") if IS_SERVERLESS else (BASE_DIR / "product_tracking.json")
 DEFAULT_IMAGE_PATH = BASE_DIR / "uploads" / "photorealistic-water-bottle_23-2151049030.avif"
 
-app = Flask(__name__, static_folder=str(FRONTEND_DIR), static_url_path="")
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp", "avif"}
+ALLOWED_MIME_PREFIXES = ("image/",)
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 
-UPLOAD_FOLDER.mkdir(exist_ok=True)
+
+def get_allowed_origins():
+    configured = os.getenv("CORS_ALLOWED_ORIGINS", "").strip()
+    if configured:
+        parsed = [origin.strip() for origin in configured.split(",") if origin.strip()]
+        if parsed == ["*"]:
+            return "*"
+        return parsed
+
+    return ["http://localhost:8000", "http://127.0.0.1:8000"]
+
+app = Flask(__name__, static_folder=str(FRONTEND_DIR), static_url_path="")
+app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_BYTES
+CORS(app, resources={r"/api/*": {"origins": get_allowed_origins()}})
+
+if IS_SERVERLESS:
+    RUNTIME_TMP_DIR.mkdir(parents=True, exist_ok=True)
+
+UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
 
 _gemini_client = None
 
@@ -97,12 +117,23 @@ def parse_analysis_response(content):
     return json.loads(cleaned_content)
 
 
+def is_allowed_image(image):
+    filename = image.filename or ""
+    extension = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    mime_type = image.mimetype or ""
+    return extension in ALLOWED_EXTENSIONS and mime_type.startswith(ALLOWED_MIME_PREFIXES)
+
+
 def get_image_path_from_request():
     if request.method == "POST" and "image" in request.files:
         image = request.files["image"]
         if image and image.filename:
+            if not is_allowed_image(image):
+                raise ValueError("Unsupported file type. Please upload a valid image.")
+
             filename = secure_filename(image.filename)
-            image_path = UPLOAD_FOLDER / filename
+            unique_name = f"{uuid.uuid4().hex}-{filename}"
+            image_path = UPLOAD_FOLDER / unique_name
             image.save(image_path)
             logger.info("Saved uploaded image to %s", image_path)
             return image_path, True
@@ -212,4 +243,8 @@ def get_tracking_data():
 
 if __name__ == "__main__":
     logger.info("Starting Flask server...")
-    app.run(host="0.0.0.0", port=int(os.getenv("PORT", "5000")), debug=True)
+    app.run(
+        host="0.0.0.0",
+        port=int(os.getenv("PORT", "5000")),
+        debug=os.getenv("FLASK_DEBUG", "false").lower() == "true",
+    )
